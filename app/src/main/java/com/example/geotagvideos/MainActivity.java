@@ -1,6 +1,7 @@
 package com.example.geotagvideos;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -49,19 +50,30 @@ import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, OnMapReadyCallback, PermissionsListener {
+    static ArrayList<ArrayList<Double>> locations = new ArrayList<ArrayList<Double>>() ;
+    static File mediaStorageDir;
+    static Context ctx;
+    static String time;
     Button record_video;
     ImageView record_video_button, pause_video;
     MediaRecorder mediaRecorder;
@@ -99,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         current_map = findViewById(R.id.current_map);
         current_map.onCreate(savedInstanceState);
         current_map.getMapAsync(this);
+        ctx=this.getApplicationContext();
         //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         record_video_button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -110,6 +123,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     camera.lock();
                     isrecording = false;
                     backToDefault();
+                    writeFileOnInternalStorage(time);
                 } else {
                     if (prepareVideoRecorder()) {
                         mediaRecorder.start();
@@ -305,12 +319,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
         camera.setDisplayOrientation(result);
     }
-    private static File getOutputMediaFile(int type){
+    public static File getOutputMediaFile(int type){
         // TODO
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
 
-        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+        mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES), "GeoTagged Videos");
         // This location works best if you want the created images to be shared
         // between applications and persist after your app has been uninstalled.
@@ -325,7 +339,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
+        time=timeStamp;
         File mediaFile;
+        String filename=mediaStorageDir.getPath()+File.separator+"TXT_"+timeStamp+".txt";
+        //Log.d("filename",filename);
         if (type == IMAGE){
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
                     "IMG_"+ timeStamp + ".jpg");
@@ -403,7 +420,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         @Override
         public void onSuccess(LocationEngineResult result) {
             MainActivity activity = activityWeakReference.get();
-
+            ArrayList<Double> lo=new ArrayList<Double>();
             if (activity != null) {
                 Location location = result.getLastLocation();
 
@@ -412,6 +429,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
 
 // Create a Toast which displays the new location's coordinates
+                lo.add(result.getLastLocation().getLatitude());
+                lo.add(result.getLastLocation().getLongitude());
+                locations.add(lo);
+                Log.d("location", String.valueOf(locations));
                 Toast.makeText(activity,String.valueOf(result.getLastLocation().getLatitude()),
                         Toast.LENGTH_SHORT).show();
 
@@ -470,6 +491,25 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void onLowMemory() {
         super.onLowMemory();
         current_map.onLowMemory();
+    }
+    public void writeFileOnInternalStorage(String timeStamp){
+        try{
+            String filename=new String(("TXT_"+timeStamp+".txt"));
+            File file =new File(mediaStorageDir.getPath()+File.separator+filename);
+            FileWriter filewriter = new FileWriter(file);
+            BufferedWriter out = new BufferedWriter(filewriter);
+            out.write("hello");
+            for(ArrayList<Double> s : locations)
+            {
+                out.write(s.toString());
+            }
+            out.close();
+
+
+        }catch (Exception e){
+            e.printStackTrace();
+
+        }
     }
 }
     /*private class MyLocationListener implements LocationListener {
