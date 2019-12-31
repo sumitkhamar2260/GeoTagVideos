@@ -8,7 +8,9 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.location.Address;
@@ -74,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     static File mediaStorageDir;
     static Context ctx;
     static String time;
-    Button record_video;
+    Button record_video,show_videos;
     ImageView record_video_button, pause_video;
     MediaRecorder mediaRecorder;
     Camera camera;
@@ -94,15 +96,18 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     /*LocationManager locationManager;
     LocationListener locationListener;
     ArrayList<location> getlocation = new ArrayList<location>();*/
-
+    ProgressDialog progressDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Mapbox.getInstance(this,"pk.eyJ1Ijoic2h1YmhhbTI2NSIsImEiOiJjazRpcHk4Z3kwb28wM2xtd2YxYXQ4a3JpIn0.TAp7LAnVGYGvkiX7fbzdAw");
         setContentView(R.layout.activity_main);
+        progressDialog = new ProgressDialog(MainActivity.this);
+        progressDialog.dismiss();
         requestPermissions();
         record_video = findViewById(R.id.record_video);
         record_video_button = findViewById(R.id.record_video_button);
+        show_videos = findViewById(R.id.show_video);
         pause_video = findViewById(R.id.pause_button);
         surfaceView = findViewById(R.id.video_surface);
         surfaceHolder = surfaceView.getHolder();
@@ -112,7 +117,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         current_map.onCreate(savedInstanceState);
         current_map.getMapAsync(this);
         ctx=this.getApplicationContext();
+        current_map.setVisibility(View.INVISIBLE);
         //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        show_videos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                progressDialog.setMessage("Loading...");
+                progressDialog.show();
+                startActivity(new Intent(MainActivity.this,videoList.class));
+            }
+        });
         record_video_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -133,6 +147,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                 new Style.OnStyleLoaded() {
                                     @Override
                                     public void onStyleLoaded(@NonNull Style style) {
+                                        /*final Handler time_interval = new Handler();
+                                        time_interval.postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                enableLocationComponent(style);
+                                                time_interval.postDelayed(this,1000);
+                                            }
+                                        },1000);*/
                                         enableLocationComponent(style);
                                     }
                                 });
@@ -187,6 +209,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     protected void onResume() {
         super.onResume();
+        if(progressDialog.isShowing())
+            progressDialog.dismiss();
     }
     @Override
     protected void onPause() {
@@ -357,11 +381,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
     public void visiblity(){
         record_video.setVisibility(View.GONE);
+        show_videos.setVisibility(View.GONE);
         surfaceView.setVisibility(View.VISIBLE);
         record_video_button.setVisibility(View.VISIBLE);
     }
     public void backToDefault(){
         record_video.setVisibility(View.VISIBLE);
+        show_videos.setVisibility(View.VISIBLE);
         surfaceView.setVisibility(View.GONE);
         record_video_button.setVisibility(View.GONE);
         record_video_button.setImageResource(R.drawable.recordvideo);
@@ -396,10 +422,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
     public void initLocationEngine(){
         locationEngine = LocationEngineProvider.getBestLocationEngine(this);
-
-        LocationEngineRequest request = new LocationEngineRequest.Builder(DEFAULT_INTERVAL_IN_MILLISECONDS)
+        LocationEngineRequest request = new LocationEngineRequest.Builder(1000)
                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
-                .setMaxWaitTime(DEFAULT_MAX_WAIT_TIME).build();
+                .build();
         locationEngine.requestLocationUpdates(request, callback, getMainLooper());
         locationEngine.getLastLocation(callback);
     }
@@ -420,18 +445,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         @Override
         public void onSuccess(LocationEngineResult result) {
             MainActivity activity = activityWeakReference.get();
-            ArrayList<Double> lo=new ArrayList<Double>();
+            ArrayList<Double> lat_lon=new ArrayList<Double>();
             if (activity != null) {
                 Location location = result.getLastLocation();
-
                 if (location == null) {
                     return;
                 }
-
 // Create a Toast which displays the new location's coordinates
-                lo.add(result.getLastLocation().getLatitude());
-                lo.add(result.getLastLocation().getLongitude());
-                locations.add(lo);
+                lat_lon.add(result.getLastLocation().getLatitude());
+                lat_lon.add(result.getLastLocation().getLongitude());
+                locations.add(lat_lon);
                 Log.d("location", String.valueOf(locations));
                 Toast.makeText(activity,String.valueOf(result.getLastLocation().getLatitude()),
                         Toast.LENGTH_SHORT).show();
@@ -498,10 +521,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             File file =new File(mediaStorageDir.getPath()+File.separator+filename);
             FileWriter filewriter = new FileWriter(file);
             BufferedWriter out = new BufferedWriter(filewriter);
-            out.write("hello");
             for(ArrayList<Double> s : locations)
             {
-                out.write(s.toString());
+                out.write(s.toString()+"\n");
             }
             out.close();
 

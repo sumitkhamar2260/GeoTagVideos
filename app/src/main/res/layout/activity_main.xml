@@ -59,4 +59,15 @@
         app:layout_constraintStart_toStartOf="parent"
         mapbox:mapbox_cameraZoom="14"
         tools:visibility="gone"></com.mapbox.mapboxsdk.maps.MapView>
+
+    <Button
+        android:id="@+id/show_video"
+        android:layout_width="370dp"
+        android:layout_height="wrap_content"
+        android:text="View Recorded Videos"
+        android:textSize="28dp"
+        app:layout_constraintBottom_toTopOf="@+id/record_video_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/record_video" />
 </androidx.constraintlayout.widget.ConstraintLayout>
