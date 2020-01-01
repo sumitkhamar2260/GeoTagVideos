@@ -49,16 +49,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/pause" />
 
-    <com.mapbox.mapboxsdk.maps.MapView
-        android:id="@+id/current_map"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_marginBottom="20dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/record_video_button"
-        app:layout_constraintStart_toStartOf="parent"
-        mapbox:mapbox_cameraZoom="14"
-        tools:visibility="gone"></com.mapbox.mapboxsdk.maps.MapView>
+
 
     <Button
         android:id="@+id/show_video"

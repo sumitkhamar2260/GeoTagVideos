@@ -1,5 +1,6 @@
 package com.example.geotagvideos;
 
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -71,11 +72,12 @@ import java.util.Locale;
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, OnMapReadyCallback, PermissionsListener {
+public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, PermissionsListener {
     static ArrayList<ArrayList<Double>> locations = new ArrayList<ArrayList<Double>>() ;
     static File mediaStorageDir;
     static Context ctx;
     static String time;
+    Handler h;
     Button record_video,show_videos;
     ImageView record_video_button, pause_video;
     MediaRecorder mediaRecorder;
@@ -83,16 +85,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     SurfaceHolder surfaceHolder;
     SurfaceView surfaceView;
     int CameraId;
+    //GPSTracker gpsTracker;
     Boolean isrecording = false;
     public static final int IMAGE = 1;
     public static final int VIDEO = 2;
     boolean isPaused = false;
-    MapboxMap mapboxMap;
-    MapView current_map;
-    LocationEngine locationEngine;
-    long DEFAULT_INTERVAL_IN_MILLISECONDS = 2000L;
-    long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
-    private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
+    //MapboxMap mapboxMap;
+    //MapView current_map;
+    //LocationEngine locationEngine;
+    //long DEFAULT_INTERVAL_IN_MILLISECONDS = 2000L;
+    //long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
+    //private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
     /*LocationManager locationManager;
     LocationListener locationListener;
     ArrayList<location> getlocation = new ArrayList<location>();*/
@@ -100,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Mapbox.getInstance(this,"pk.eyJ1Ijoic2h1YmhhbTI2NSIsImEiOiJjazRpcHk4Z3kwb28wM2xtd2YxYXQ4a3JpIn0.TAp7LAnVGYGvkiX7fbzdAw");
+       // Mapbox.getInstance(this,"pk.eyJ1Ijoic2h1YmhhbTI2NSIsImEiOiJjazRpcHk4Z3kwb28wM2xtd2YxYXQ4a3JpIn0.TAp7LAnVGYGvkiX7fbzdAw");
         setContentView(R.layout.activity_main);
         progressDialog = new ProgressDialog(MainActivity.this);
         progressDialog.dismiss();
@@ -112,12 +115,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         surfaceView = findViewById(R.id.video_surface);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
+        h=new Handler();
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        current_map = findViewById(R.id.current_map);
-        current_map.onCreate(savedInstanceState);
-        current_map.getMapAsync(this);
+        //current_map = findViewById(R.id.current_map);
+        //current_map.onCreate(savedInstanceState);
+        //current_map.getMapAsync(this);
         ctx=this.getApplicationContext();
-        current_map.setVisibility(View.INVISIBLE);
+        //current_map.setVisibility(View.INVISIBLE);
         //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         show_videos.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -136,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     releaseMediaRecorder();
                     camera.lock();
                     isrecording = false;
+                    h.removeCallbacks(runlocation);
                     backToDefault();
                     writeFileOnInternalStorage(time);
                 } else {
@@ -143,10 +148,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         mediaRecorder.start();
                         isrecording = true;
                         record_video_button.setImageResource(R.drawable.stop);
-                        mapboxMap.setStyle(Style.MAPBOX_STREETS,
-                                new Style.OnStyleLoaded() {
-                                    @Override
-                                    public void onStyleLoaded(@NonNull Style style) {
+                        h.postDelayed(runlocation,0);
+                        //mapboxMap.setStyle(Style.MAPBOX_STREETS,
+                                //new Style.OnStyleLoaded() {
+                                  //  @Override
+                                    //public void onStyleLoaded(@NonNull Style style) {
                                         /*final Handler time_interval = new Handler();
                                         time_interval.postDelayed(new Runnable() {
                                             @Override
@@ -155,9 +161,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                                 time_interval.postDelayed(this,1000);
                                             }
                                         },1000);*/
-                                        enableLocationComponent(style);
+                                        //enableLocationComponent(style);
                                     }
-                                });
+
                         /*locationListener = new MyLocationListener();
                         final Handler handler = new Handler();
                         handler.postDelayed(new Runnable() {
@@ -183,7 +189,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         //pause_video.setVisibility(View.VISIBLE);
                     }
                 }
-            }
+
         });
         record_video.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -206,6 +212,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         });*/
     }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -391,7 +398,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         surfaceView.setVisibility(View.GONE);
         record_video_button.setVisibility(View.GONE);
         record_video_button.setImageResource(R.drawable.recordvideo);
-        locationEngine.removeLocationUpdates(callback);
+       // locationEngine.removeLocationUpdates(callback);
     }
 
     @Override
@@ -404,7 +411,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     }
 
-    @Override
+   /* @Override
     public void onMapReady(@NonNull MapboxMap mapboxMap) {
         this.mapboxMap = mapboxMap;
     }
@@ -422,7 +429,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
     public void initLocationEngine(){
         locationEngine = LocationEngineProvider.getBestLocationEngine(this);
-        LocationEngineRequest request = new LocationEngineRequest.Builder(1000)
+        LocationEngineRequest request = new LocationEngineRequest.Builder(100)
                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
                 .build();
         locationEngine.requestLocationUpdates(request, callback, getMainLooper());
@@ -442,7 +449,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
          *
          * @param result the LocationEngineResult object which has the last known location within it.
          */
-        @Override
+        /*@Override
         public void onSuccess(LocationEngineResult result) {
             MainActivity activity = activityWeakReference.get();
             ArrayList<Double> lat_lon=new ArrayList<Double>();
@@ -471,7 +478,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
          *
          * @param exception the exception message
          */
-        @Override
+        /*@Override
         public void onFailure(@NonNull Exception exception) {
             Log.d("LocationChangeActivity", exception.getLocalizedMessage());
             MainActivity activity = activityWeakReference.get();
@@ -514,7 +521,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void onLowMemory() {
         super.onLowMemory();
         current_map.onLowMemory();
-    }
+    }*/
     public void writeFileOnInternalStorage(String timeStamp){
         try{
             String filename=new String(("TXT_"+timeStamp+".txt"));
@@ -533,6 +540,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
     }
+    public Runnable runlocation=new Runnable() {
+        @Override
+        public void run() {
+            Double latitude=0.0;
+            Double longitude=0.0;
+            GPSTracker gpsTracker=new GPSTracker(MainActivity.this);
+            if(gpsTracker.canGetLocation()) {
+                latitude = gpsTracker.getLatitude();
+                longitude = gpsTracker.getLongitude();
+            }
+            ArrayList<Double> lo=new ArrayList<Double>();
+            lo.add(latitude);
+            lo.add(longitude);
+            locations.add(lo);
+            MainActivity.this.h.postDelayed(MainActivity.this.runlocation,1000);
+        }
+    };
 }
     /*private class MyLocationListener implements LocationListener {
 
