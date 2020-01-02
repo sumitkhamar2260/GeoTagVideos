@@ -64,7 +64,7 @@ public class videoAdapter extends RecyclerView.Adapter<videoAdapter.MyViewHolder
         holder.video_card.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(context,ShowVideo.class);
+                Intent intent = new Intent(context,WatchVideo.class);
                 intent.putExtra("video_title",video_title.get(position));
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(intent);

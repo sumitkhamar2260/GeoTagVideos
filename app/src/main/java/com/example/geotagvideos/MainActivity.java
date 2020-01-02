@@ -35,23 +35,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
-
-import com.mapbox.android.core.location.LocationEngine;
-import com.mapbox.android.core.location.LocationEngineCallback;
-import com.mapbox.android.core.location.LocationEngineProvider;
-import com.mapbox.android.core.location.LocationEngineRequest;
-import com.mapbox.android.core.location.LocationEngineResult;
-import com.mapbox.android.core.permissions.PermissionsListener;
-import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.mapboxsdk.location.LocationComponent;
-import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
-import com.mapbox.mapboxsdk.location.modes.CameraMode;
-import com.mapbox.mapboxsdk.location.modes.RenderMode;
-import com.mapbox.mapboxsdk.maps.MapView;
-import com.mapbox.mapboxsdk.maps.MapboxMap;
-import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-import com.mapbox.mapboxsdk.maps.Style;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -60,6 +45,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,11 +55,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, PermissionsListener {
+public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
     static ArrayList<ArrayList<Double>> locations = new ArrayList<ArrayList<Double>>() ;
     static File mediaStorageDir;
     static Context ctx;
@@ -90,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public static final int IMAGE = 1;
     public static final int VIDEO = 2;
     boolean isPaused = false;
+    TimerTask timerTask;
     //MapboxMap mapboxMap;
     //MapView current_map;
     //LocationEngine locationEngine;
@@ -100,10 +90,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     LocationListener locationListener;
     ArrayList<location> getlocation = new ArrayList<location>();*/
     ProgressDialog progressDialog;
+    DecimalFormat df;
+    TextView counter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-       // Mapbox.getInstance(this,"pk.eyJ1Ijoic2h1YmhhbTI2NSIsImEiOiJjazRpcHk4Z3kwb28wM2xtd2YxYXQ4a3JpIn0.TAp7LAnVGYGvkiX7fbzdAw");
+        // Mapbox.getInstance(this,"pk.eyJ1Ijoic2h1YmhhbTI2NSIsImEiOiJjazRpcHk4Z3kwb28wM2xtd2YxYXQ4a3JpIn0.TAp7LAnVGYGvkiX7fbzdAw");
         setContentView(R.layout.activity_main);
         progressDialog = new ProgressDialog(MainActivity.this);
         progressDialog.dismiss();
@@ -113,8 +105,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         show_videos = findViewById(R.id.show_video);
         pause_video = findViewById(R.id.pause_button);
         surfaceView = findViewById(R.id.video_surface);
+        counter = findViewById(R.id.counting);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
+        df = new DecimalFormat("#.##");
+        df.setRoundingMode(RoundingMode.CEILING);
         h=new Handler();
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         //current_map = findViewById(R.id.current_map);
@@ -136,7 +131,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             public void onClick(View v) {
 
                 if (isrecording) {
-                    mediaRecorder.stop();
                     releaseMediaRecorder();
                     camera.lock();
                     isrecording = false;
@@ -145,14 +139,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     writeFileOnInternalStorage(time);
                 } else {
                     if (prepareVideoRecorder()) {
-                        mediaRecorder.start();
+                        //mediaRecorder.start();
                         isrecording = true;
                         record_video_button.setImageResource(R.drawable.stop);
                         h.postDelayed(runlocation,0);
                         //mapboxMap.setStyle(Style.MAPBOX_STREETS,
-                                //new Style.OnStyleLoaded() {
-                                  //  @Override
-                                    //public void onStyleLoaded(@NonNull Style style) {
+                        //new Style.OnStyleLoaded() {
+                        //  @Override
+                        //public void onStyleLoaded(@NonNull Style style) {
                                         /*final Handler time_interval = new Handler();
                                         time_interval.postDelayed(new Runnable() {
                                             @Override
@@ -161,8 +155,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                                 time_interval.postDelayed(this,1000);
                                             }
                                         },1000);*/
-                                        //enableLocationComponent(style);
-                                    }
+                        //enableLocationComponent(style);
+                    }
 
                         /*locationListener = new MyLocationListener();
                         final Handler handler = new Handler();
@@ -186,9 +180,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                             }
                         }, 1000);*/
 
-                        //pause_video.setVisibility(View.VISIBLE);
-                    }
+                    //pause_video.setVisibility(View.VISIBLE);
                 }
+            }
 
         });
         record_video.setOnClickListener(new View.OnClickListener() {
@@ -255,6 +249,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             ActivityCompat.requestPermissions(MainActivity.this,
                     new String[]{Manifest.permission.RECORD_AUDIO},
                     1002);
+        }
+        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission_group.MICROPHONE)!= PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission_group.MICROPHONE},
+                    1004);
+        }
+        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    1005);
         }
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(MainActivity.this,
@@ -398,10 +402,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         surfaceView.setVisibility(View.GONE);
         record_video_button.setVisibility(View.GONE);
         record_video_button.setImageResource(R.drawable.recordvideo);
-       // locationEngine.removeLocationUpdates(callback);
+        // locationEngine.removeLocationUpdates(callback);
     }
 
-    @Override
+    /*@Override
     public void onExplanationNeeded(List<String> permissionsToExplain) {
 
     }
@@ -411,44 +415,41 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     }
 
-   /* @Override
-    public void onMapReady(@NonNull MapboxMap mapboxMap) {
-        this.mapboxMap = mapboxMap;
-    }
-    public void enableLocationComponent(Style loadMapStyle){
-        LocationComponent locationComponent = mapboxMap.getLocationComponent();
-        LocationComponentActivationOptions locationComponentActivationOptions =
-                LocationComponentActivationOptions.builder(this, loadMapStyle)
-                        .useDefaultLocationEngine(false)
-                        .build();
-        locationComponent.activateLocationComponent(locationComponentActivationOptions);
-        locationComponent.setLocationComponentEnabled(true);
-        locationComponent.setCameraMode(CameraMode.TRACKING);
-        locationComponent.setRenderMode(RenderMode.COMPASS);
-        initLocationEngine();
-    }
-    public void initLocationEngine(){
-        locationEngine = LocationEngineProvider.getBestLocationEngine(this);
-        LocationEngineRequest request = new LocationEngineRequest.Builder(100)
-                .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
-                .build();
-        locationEngine.requestLocationUpdates(request, callback, getMainLooper());
-        locationEngine.getLastLocation(callback);
-    }
-    private static class MainActivityLocationCallback
-            implements LocationEngineCallback<LocationEngineResult> {
-
-        private final WeakReference<MainActivity> activityWeakReference;
-
-        MainActivityLocationCallback(MainActivity activity) {
-            this.activityWeakReference = new WeakReference<>(activity);
-        }
-
-        /**
-         * The LocationEngineCallback interface's method which fires when the device's location has changed.
-         *
-         * @param result the LocationEngineResult object which has the last known location within it.
-         */
+    /* @Override
+     public void onMapReady(@NonNull MapboxMap mapboxMap) {
+         this.mapboxMap = mapboxMap;
+     }
+     public void enableLocationComponent(Style loadMapStyle){
+         LocationComponent locationComponent = mapboxMap.getLocationComponent();
+         LocationComponentActivationOptions locationComponentActivationOptions =
+                 LocationComponentActivationOptions.builder(this, loadMapStyle)
+                         .useDefaultLocationEngine(false)
+                         .build();
+         locationComponent.activateLocationComponent(locationComponentActivationOptions);
+         locationComponent.setLocationComponentEnabled(true);
+         locationComponent.setCameraMode(CameraMode.TRACKING);
+         locationComponent.setRenderMode(RenderMode.COMPASS);
+         initLocationEngine();
+     }
+     public void initLocationEngine(){
+         locationEngine = LocationEngineProvider.getBestLocationEngine(this);
+         LocationEngineRequest request = new LocationEngineRequest.Builder(100)
+                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+                 .build();
+         locationEngine.requestLocationUpdates(request, callback, getMainLooper());
+         locationEngine.getLastLocation(callback);
+     }
+     private static class MainActivityLocationCallback
+             implements LocationEngineCallback<LocationEngineResult> {
+         private final WeakReference<MainActivity> activityWeakReference;
+         MainActivityLocationCallback(MainActivity activity) {
+             this.activityWeakReference = new WeakReference<>(activity);
+         }
+         /**
+          * The LocationEngineCallback interface's method which fires when the device's location has changed.
+          *
+          * @param result the LocationEngineResult object which has the last known location within it.
+          */
         /*@Override
         public void onSuccess(LocationEngineResult result) {
             MainActivity activity = activityWeakReference.get();
@@ -465,14 +466,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 Log.d("location", String.valueOf(locations));
                 Toast.makeText(activity,String.valueOf(result.getLastLocation().getLatitude()),
                         Toast.LENGTH_SHORT).show();
-
 // Pass the new location to the Maps SDK's LocationComponent
                 if (activity.mapboxMap != null && result.getLastLocation() != null) {
                     activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
                 }
             }
         }
-
         /**
          * The LocationEngineCallback interface's method which fires when the device's location can not be captured
          *
@@ -488,25 +487,21 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         }
     }
-
     @Override
     protected void onStart() {
         super.onStart();
         current_map.onStart();
     }
-
     @Override
     protected void onStop() {
         super.onStop();
         current_map.onStop();
     }
-
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         current_map.onSaveInstanceState(outState);
     }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -516,7 +511,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
         current_map.onDestroy();
     }
-
     @Override
     public void onLowMemory() {
         super.onLowMemory();
@@ -550,19 +544,33 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 latitude = gpsTracker.getLatitude();
                 longitude = gpsTracker.getLongitude();
             }
+            if(locations.size()==3) {
+                counter.setText("1");
+                mediaRecorder.start();
+            }
+            if(locations.size()==2){
+                counter.setVisibility(View.VISIBLE);
+                counter.setText("2");
+            }
+            if(locations.size()==1){
+                counter.setVisibility(View.VISIBLE);
+                counter.setText("3");
+            }
+            if(locations.size()>3){
+                counter.setVisibility(View.GONE);
+            }
             ArrayList<Double> lo=new ArrayList<Double>();
             lo.add(latitude);
             lo.add(longitude);
+            lo.add(Double.valueOf(df.format(gpsTracker.getSpeed())));
             locations.add(lo);
             MainActivity.this.h.postDelayed(MainActivity.this.runlocation,1000);
         }
     };
 }
     /*private class MyLocationListener implements LocationListener {
-
         @Override
         public void onLocationChanged(Location loc) {
-
             Toast.makeText(
                     getBaseContext(),
                     "Location changed: Lat: " + loc.getLatitude() + " Lng: "
@@ -599,13 +607,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         /*@Override
         public void onProviderDisabled(String provider) {
         }
-
         @Override
         public void onProviderEnabled(String provider) {
         }
-
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
         }
     }*/
-

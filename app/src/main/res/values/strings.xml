@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Geo Tag Videos</string>
+    <string name="title_activity_watch_video">Map</string>
 </resources>

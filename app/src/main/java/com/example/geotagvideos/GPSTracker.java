@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -26,7 +27,7 @@ class GPSTracker implements LocationListener {
     Location location; // location
     double latitude; // latitude
     double longitude; // longitude
-
+    double speed;
     // The minimum distance to change Updates in meters
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 10 meters
 
@@ -50,7 +51,22 @@ class GPSTracker implements LocationListener {
         try {
             locationManager = (LocationManager) mContext
                     .getSystemService(Context.LOCATION_SERVICE);
-
+            Criteria criteria = new Criteria();
+            criteria.setAccuracy(Criteria.ACCURACY_FINE);
+            criteria.setPowerRequirement(Criteria.POWER_HIGH);
+            criteria.setAltitudeRequired(false);
+            criteria.setSpeedRequired(true);
+            criteria.setSpeedAccuracy(Criteria.ACCURACY_MEDIUM);
+            criteria.setCostAllowed(true);
+            criteria.setBearingRequired(false);
+//API level 9 and up
+            criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
+            criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
+            //criteria.setBearingAccuracy(Criteria.ACCURACY_HIGH);
+            //criteria.setSpeedAccuracy(Criteria.ACCURACY_HIGH);
+            //criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
+            //criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
+            locationManager.getBestProvider(criteria,true);
             // getting GPS status
             isGPSEnabled = locationManager
                     .isProviderEnabled(LocationManager.GPS_PROVIDER);
@@ -142,7 +158,11 @@ class GPSTracker implements LocationListener {
         // return longitude
         return longitude;
     }
-
+    public double getSpeed(){
+        if (location!=null)
+            speed= location.getSpeed()*18/5;
+        return speed;
+    }
     /**
      * Function to check GPS/wifi enabled
      *
