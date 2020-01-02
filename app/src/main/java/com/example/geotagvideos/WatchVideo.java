@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.VideoView;
@@ -20,9 +19,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -40,7 +37,7 @@ public class WatchVideo extends FragmentActivity implements OnMapReadyCallback {
     Marker marker;
     boolean isMarkerAdded = false;
     TextView speed;
-    int i=3;
+    int i=6;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,7 +109,7 @@ public class WatchVideo extends FragmentActivity implements OnMapReadyCallback {
         for(int i = 0;i<lat.size()-1;i++){
             mMap.addPolyline(new PolylineOptions().add(new LatLng(lat.get(i),lon.get(i)),new LatLng(lat.get(i+1),lon.get(i+1))).width(15).color(Color.BLUE).geodesic(true));
         }
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(3),lon.get(3)),20));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(5),lon.get(5)),20));
         // Add a marker in Sydney and move the camera
     }
     Runnable showMarker = new Runnable() {

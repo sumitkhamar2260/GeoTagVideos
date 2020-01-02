@@ -1,8 +1,6 @@
 package com.example.geotagvideos;
 
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -14,53 +12,34 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
-import android.location.Address;
-import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.Trace;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.lang.ref.WeakReference;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
-
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
     static ArrayList<ArrayList<Double>> locations = new ArrayList<ArrayList<Double>>() ;
     static File mediaStorageDir;
@@ -92,6 +71,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     ProgressDialog progressDialog;
     DecimalFormat df;
     TextView counter;
+    int count=5;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,6 +88,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         counter = findViewById(R.id.counting);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
+        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)!= PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+        || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
+        || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission_group.MICROPHONE)!= PackageManager.PERMISSION_GRANTED
+        || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED
+        || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission_group.MICROPHONE,Manifest.permission.READ_EXTERNAL_STORAGE},
+                    1000);
+        }
+
         df = new DecimalFormat("#.##");
         df.setRoundingMode(RoundingMode.CEILING);
         h=new Handler();
@@ -141,8 +131,33 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     if (prepareVideoRecorder()) {
                         //mediaRecorder.start();
                         isrecording = true;
+                        record_video_button.setClickable(false);
                         record_video_button.setImageResource(R.drawable.stop);
+                        final Timer timer = new Timer();
                         h.postDelayed(runlocation,0);
+                        timer.scheduleAtFixedRate(new TimerTask() {
+                            @Override
+                            public void run() {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if(count==0){
+                                            counter.setVisibility(View.GONE);
+                                            mediaRecorder.start();
+                                            record_video_button.setClickable(true);
+                                            count = 5;
+                                            counter.setVisibility(View.GONE);
+                                            timer.cancel();
+                                        }
+                                        else{
+                                            counter.setVisibility(View.VISIBLE);
+                                            counter.setText(String.valueOf(count));
+                                            count--;
+                                        }
+                                    }
+                                });
+                            }
+                        },0,1000);
                         //mapboxMap.setStyle(Style.MAPBOX_STREETS,
                         //new Style.OnStyleLoaded() {
                         //  @Override
@@ -235,36 +250,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
     public void requestPermissions(){
-        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)!= PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission.CAMERA},
-                    1000);
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    1001);
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission.RECORD_AUDIO},
-                    1002);
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission_group.MICROPHONE)!= PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission_group.MICROPHONE},
-                    1004);
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    1005);
-        }
-        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    1003);
-        }
+
     }
 
     @Override
@@ -543,21 +529,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             if(gpsTracker.canGetLocation()) {
                 latitude = gpsTracker.getLatitude();
                 longitude = gpsTracker.getLongitude();
-            }
-            if(locations.size()==3) {
-                counter.setText("1");
-                mediaRecorder.start();
-            }
-            if(locations.size()==2){
-                counter.setVisibility(View.VISIBLE);
-                counter.setText("2");
-            }
-            if(locations.size()==1){
-                counter.setVisibility(View.VISIBLE);
-                counter.setText("3");
-            }
-            if(locations.size()>3){
-                counter.setVisibility(View.GONE);
             }
             ArrayList<Double> lo=new ArrayList<Double>();
             lo.add(latitude);
