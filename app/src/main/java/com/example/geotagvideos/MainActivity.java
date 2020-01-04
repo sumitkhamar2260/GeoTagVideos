@@ -124,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         record_video.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                gpsTracker = new GPSTracker(MainActivity.this);
                 visiblity();
             }
         });
