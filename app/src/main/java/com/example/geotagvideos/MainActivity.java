@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public static final int VIDEO = 2;
     boolean isPaused = false;
     TimerTask timerTask;
+    GPSTracker gpsTracker;
     //MapboxMap mapboxMap;
     //MapView current_map;
     //LocationEngine locationEngine;
@@ -71,7 +72,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     ProgressDialog progressDialog;
     DecimalFormat df;
     TextView counter;
-    int count=5;
+    //int count=5;
+    ArrayList<String> current_timestamp;
+    ArrayList<Double> lati,longi;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,8 +89,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         pause_video = findViewById(R.id.pause_button);
         surfaceView = findViewById(R.id.video_surface);
         counter = findViewById(R.id.counting);
+        counter.setVisibility(View.GONE);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
+        current_timestamp = new ArrayList<>();
+        lati = new ArrayList<>();
+        longi = new ArrayList<>();
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)!= PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
         || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)!= PackageManager.PERMISSION_GRANTED
         || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission_group.MICROPHONE)!= PackageManager.PERMISSION_GRANTED
@@ -97,7 +104,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     new String[]{Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO,Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission_group.MICROPHONE,Manifest.permission.READ_EXTERNAL_STORAGE},
                     1000);
         }
-
+        gpsTracker=new GPSTracker(MainActivity.this);
         df = new DecimalFormat("#.##");
         df.setRoundingMode(RoundingMode.CEILING);
         h=new Handler();
@@ -129,13 +136,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     writeFileOnInternalStorage(time);
                 } else {
                     if (prepareVideoRecorder()) {
-                        //mediaRecorder.start();
+                        mediaRecorder.start();
                         isrecording = true;
-                        record_video_button.setClickable(false);
                         record_video_button.setImageResource(R.drawable.stop);
                         final Timer timer = new Timer();
                         h.postDelayed(runlocation,0);
-                        timer.scheduleAtFixedRate(new TimerTask() {
+                        /*timer.scheduleAtFixedRate(new TimerTask() {
                             @Override
                             public void run() {
                                 runOnUiThread(new Runnable() {
@@ -145,9 +151,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                             counter.setVisibility(View.GONE);
                                             mediaRecorder.start();
                                             record_video_button.setClickable(true);
-                                            count = 5;
-                                            counter.setVisibility(View.GONE);
                                             timer.cancel();
+                                            counter.setVisibility(View.INVISIBLE);
+                                            count = 5;
                                         }
                                         else{
                                             counter.setVisibility(View.VISIBLE);
@@ -157,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                     }
                                 });
                             }
-                        },0,1000);
+                        },0,1000);*/
                         //mapboxMap.setStyle(Style.MAPBOX_STREETS,
                         //new Style.OnStyleLoaded() {
                         //  @Override
@@ -513,28 +519,39 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 out.write(s.toString()+"\n");
             }
             out.close();
-
-
+            create_kml KML = new create_kml();
+            String kml_file = KML.kml(current_timestamp,lati,longi);
+            lati.clear();
+            longi.clear();
+            String kml_filename = new String("KML_"+timeStamp+".kml");
+            File k_file =new File(mediaStorageDir.getPath()+File.separator+kml_filename);
+            FileWriter k_filewriter = new FileWriter(k_file);
+            BufferedWriter k_out = new BufferedWriter(k_filewriter);
+            k_out.write(kml_file);
+            k_out.close();
         }catch (Exception e){
             e.printStackTrace();
 
         }
+        locations.clear();
     }
     public Runnable runlocation=new Runnable() {
         @Override
         public void run() {
             Double latitude=0.0;
             Double longitude=0.0;
-            GPSTracker gpsTracker=new GPSTracker(MainActivity.this);
             if(gpsTracker.canGetLocation()) {
                 latitude = gpsTracker.getLatitude();
                 longitude = gpsTracker.getLongitude();
             }
             ArrayList<Double> lo=new ArrayList<Double>();
             lo.add(latitude);
+            lati.add(latitude);
+            longi.add(longitude);
             lo.add(longitude);
             lo.add(Double.valueOf(df.format(gpsTracker.getSpeed())));
             locations.add(lo);
+            current_timestamp.add(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:sszzzzzz", Locale.US).format(new Date()));
             MainActivity.this.h.postDelayed(MainActivity.this.runlocation,1000);
         }
     };

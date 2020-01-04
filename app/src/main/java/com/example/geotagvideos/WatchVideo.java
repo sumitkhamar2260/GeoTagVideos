@@ -37,7 +37,7 @@ public class WatchVideo extends FragmentActivity implements OnMapReadyCallback {
     Marker marker;
     boolean isMarkerAdded = false;
     TextView speed;
-    int i=6;
+    int i=0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -109,7 +109,7 @@ public class WatchVideo extends FragmentActivity implements OnMapReadyCallback {
         for(int i = 0;i<lat.size()-1;i++){
             mMap.addPolyline(new PolylineOptions().add(new LatLng(lat.get(i),lon.get(i)),new LatLng(lat.get(i+1),lon.get(i+1))).width(15).color(Color.BLUE).geodesic(true));
         }
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(5),lon.get(5)),20));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(0),lon.get(0)),20));
         // Add a marker in Sydney and move the camera
     }
     Runnable showMarker = new Runnable() {
@@ -122,7 +122,7 @@ public class WatchVideo extends FragmentActivity implements OnMapReadyCallback {
                 if(isMarkerAdded)
                     marker.remove();
                 marker=mMap.addMarker(new MarkerOptions().position(new LatLng(lat.get(i),lon.get(i))).icon(BitmapDescriptorFactory.fromResource(R.drawable.userlocation)).flat(true));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(i),lon.get(i)),18));
+                //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(i),lon.get(i)),18));
                 speed.setText(String.valueOf(spd.get(i) + "Km/h"));
                 i++;
                 isMarkerAdded = true;
