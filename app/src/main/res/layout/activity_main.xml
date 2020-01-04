@@ -38,17 +38,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/recordvideo" />
 
-    <ImageView
-        android:id="@+id/pause_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/record_video_button"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/pause" />
-
     <Button
         android:id="@+id/show_video"
         android:layout_width="370dp"
@@ -60,16 +49,4 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/record_video" />
 
-    <TextView
-        android:id="@+id/counting"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="3"
-        android:textSize="75dp"
-        android:visibility="gone"
-        android:textColor="#ffffff"
-        app:layout_constraintBottom_toTopOf="@+id/record_video_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

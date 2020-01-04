@@ -47,38 +47,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     static String time;
     Handler h;
     Button record_video,show_videos;
-    ImageView record_video_button, pause_video;
+    ImageView record_video_button;
     MediaRecorder mediaRecorder;
     Camera camera;
     SurfaceHolder surfaceHolder;
     SurfaceView surfaceView;
     int CameraId;
-    //GPSTracker gpsTracker;
     Boolean isrecording = false;
     public static final int IMAGE = 1;
     public static final int VIDEO = 2;
-    boolean isPaused = false;
-    TimerTask timerTask;
     GPSTracker gpsTracker;
-    //MapboxMap mapboxMap;
-    //MapView current_map;
-    //LocationEngine locationEngine;
-    //long DEFAULT_INTERVAL_IN_MILLISECONDS = 2000L;
-    //long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
-    //private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
-    /*LocationManager locationManager;
-    LocationListener locationListener;
-    ArrayList<location> getlocation = new ArrayList<location>();*/
     ProgressDialog progressDialog;
     DecimalFormat df;
-    TextView counter;
-    //int count=5;
     ArrayList<String> current_timestamp;
     ArrayList<Double> lati,longi;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Mapbox.getInstance(this,"pk.eyJ1Ijoic2h1YmhhbTI2NSIsImEiOiJjazRpcHk4Z3kwb28wM2xtd2YxYXQ4a3JpIn0.TAp7LAnVGYGvkiX7fbzdAw");
         setContentView(R.layout.activity_main);
         progressDialog = new ProgressDialog(MainActivity.this);
         progressDialog.dismiss();
@@ -86,10 +71,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         record_video = findViewById(R.id.record_video);
         record_video_button = findViewById(R.id.record_video_button);
         show_videos = findViewById(R.id.show_video);
-        pause_video = findViewById(R.id.pause_button);
         surfaceView = findViewById(R.id.video_surface);
-        counter = findViewById(R.id.counting);
-        counter.setVisibility(View.GONE);
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
         current_timestamp = new ArrayList<>();
@@ -109,12 +91,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         df.setRoundingMode(RoundingMode.CEILING);
         h=new Handler();
         surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        //current_map = findViewById(R.id.current_map);
-        //current_map.onCreate(savedInstanceState);
-        //current_map.getMapAsync(this);
         ctx=this.getApplicationContext();
-        //current_map.setVisibility(View.INVISIBLE);
-        //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         show_videos.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -139,72 +116,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         mediaRecorder.start();
                         isrecording = true;
                         record_video_button.setImageResource(R.drawable.stop);
-                        final Timer timer = new Timer();
                         h.postDelayed(runlocation,0);
-                        /*timer.scheduleAtFixedRate(new TimerTask() {
-                            @Override
-                            public void run() {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        if(count==0){
-                                            counter.setVisibility(View.GONE);
-                                            mediaRecorder.start();
-                                            record_video_button.setClickable(true);
-                                            timer.cancel();
-                                            counter.setVisibility(View.INVISIBLE);
-                                            count = 5;
-                                        }
-                                        else{
-                                            counter.setVisibility(View.VISIBLE);
-                                            counter.setText(String.valueOf(count));
-                                            count--;
-                                        }
-                                    }
-                                });
-                            }
-                        },0,1000);*/
-                        //mapboxMap.setStyle(Style.MAPBOX_STREETS,
-                        //new Style.OnStyleLoaded() {
-                        //  @Override
-                        //public void onStyleLoaded(@NonNull Style style) {
-                                        /*final Handler time_interval = new Handler();
-                                        time_interval.postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                enableLocationComponent(style);
-                                                time_interval.postDelayed(this,1000);
-                                            }
-                                        },1000);*/
-                        //enableLocationComponent(style);
                     }
-
-                        /*locationListener = new MyLocationListener();
-                        final Handler handler = new Handler();
-                        handler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                    if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                        // TODO: Consider calling
-                                        //    Activity#requestPermissions
-                                        // here to request the missing permissions, and then overriding
-                                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                        //                                          int[] grantResults)
-                                        // to handle the case where the user grants the permission. See the documentation
-                                        // for Activity#requestPermissions for more details.
-                                        return;
-                                    }
-                                }
-                                locationManager.requestLocationUpdates(
-                                        LocationManager.GPS_PROVIDER, 1000, 0, locationListener);
-                            }
-                        }, 1000);*/
-
-                    //pause_video.setVisibility(View.VISIBLE);
                 }
             }
-
         });
         record_video.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -212,20 +127,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 visiblity();
             }
         });
-        /*pause_video.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(isPaused){
-                    mediaRecorder.start();
-                    isPaused = false;
-                    pause_video.setImageResource(R.drawable.pause);
-                }else{
-                    mediaRecorder.stop();
-                    isPaused = true;
-                    pause_video.setImageResource(R.drawable.play);
-                }
-            }
-        });*/
     }
 
     @Override
@@ -318,12 +219,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
         return true;
     }
-    private static Uri getOutputMediaFileUri(int type){
-        return Uri.fromFile(getOutputMediaFile(type));
-    }
     private static void setCameraDisplayOrientation(Activity activity,
                                                     int cameraId, android.hardware.Camera camera) {
-        // see http://developer.android.com/reference/android/hardware/Camera.html#setDisplayOrientation(int)
         Camera.CameraInfo info =
                 new android.hardware.Camera.CameraInfo();
         Camera.getCameraInfo(cameraId, info);
@@ -340,36 +237,25 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         int result;
         if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             result = (info.orientation + degrees) % 360;
-            result = (360 - result) % 360;  // compensate the mirror
-        } else {  // back-facing
+            result = (360 - result) % 360;
+        } else {
             result = (info.orientation - degrees + 360) % 360;
         }
         camera.setDisplayOrientation(result);
     }
     public static File getOutputMediaFile(int type){
-        // TODO
-        // To be safe, you should check that the SDCard is mounted
-        // using Environment.getExternalStorageState() before doing this.
-
         mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES), "GeoTagged Videos");
-        // This location works best if you want the created images to be shared
-        // between applications and persist after your app has been uninstalled.
-
-        // Create the storage directory if it does not exist
         if (! mediaStorageDir.exists()){
             if (! mediaStorageDir.mkdirs()){
                 Log.d("MyCameraApp", "failed to create directory");
                 return null;
             }
         }
-
-        // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
         time=timeStamp;
         File mediaFile;
         String filename=mediaStorageDir.getPath()+File.separator+"TXT_"+timeStamp+".txt";
-        //Log.d("filename",filename);
         if (type == IMAGE){
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
                     "IMG_"+ timeStamp + ".jpg");
@@ -394,120 +280,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         surfaceView.setVisibility(View.GONE);
         record_video_button.setVisibility(View.GONE);
         record_video_button.setImageResource(R.drawable.recordvideo);
-        // locationEngine.removeLocationUpdates(callback);
     }
-
-    /*@Override
-    public void onExplanationNeeded(List<String> permissionsToExplain) {
-
-    }
-
-    @Override
-    public void onPermissionResult(boolean granted) {
-
-    }
-
-    /* @Override
-     public void onMapReady(@NonNull MapboxMap mapboxMap) {
-         this.mapboxMap = mapboxMap;
-     }
-     public void enableLocationComponent(Style loadMapStyle){
-         LocationComponent locationComponent = mapboxMap.getLocationComponent();
-         LocationComponentActivationOptions locationComponentActivationOptions =
-                 LocationComponentActivationOptions.builder(this, loadMapStyle)
-                         .useDefaultLocationEngine(false)
-                         .build();
-         locationComponent.activateLocationComponent(locationComponentActivationOptions);
-         locationComponent.setLocationComponentEnabled(true);
-         locationComponent.setCameraMode(CameraMode.TRACKING);
-         locationComponent.setRenderMode(RenderMode.COMPASS);
-         initLocationEngine();
-     }
-     public void initLocationEngine(){
-         locationEngine = LocationEngineProvider.getBestLocationEngine(this);
-         LocationEngineRequest request = new LocationEngineRequest.Builder(100)
-                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
-                 .build();
-         locationEngine.requestLocationUpdates(request, callback, getMainLooper());
-         locationEngine.getLastLocation(callback);
-     }
-     private static class MainActivityLocationCallback
-             implements LocationEngineCallback<LocationEngineResult> {
-         private final WeakReference<MainActivity> activityWeakReference;
-         MainActivityLocationCallback(MainActivity activity) {
-             this.activityWeakReference = new WeakReference<>(activity);
-         }
-         /**
-          * The LocationEngineCallback interface's method which fires when the device's location has changed.
-          *
-          * @param result the LocationEngineResult object which has the last known location within it.
-          */
-        /*@Override
-        public void onSuccess(LocationEngineResult result) {
-            MainActivity activity = activityWeakReference.get();
-            ArrayList<Double> lat_lon=new ArrayList<Double>();
-            if (activity != null) {
-                Location location = result.getLastLocation();
-                if (location == null) {
-                    return;
-                }
-// Create a Toast which displays the new location's coordinates
-                lat_lon.add(result.getLastLocation().getLatitude());
-                lat_lon.add(result.getLastLocation().getLongitude());
-                locations.add(lat_lon);
-                Log.d("location", String.valueOf(locations));
-                Toast.makeText(activity,String.valueOf(result.getLastLocation().getLatitude()),
-                        Toast.LENGTH_SHORT).show();
-// Pass the new location to the Maps SDK's LocationComponent
-                if (activity.mapboxMap != null && result.getLastLocation() != null) {
-                    activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
-                }
-            }
-        }
-        /**
-         * The LocationEngineCallback interface's method which fires when the device's location can not be captured
-         *
-         * @param exception the exception message
-         */
-        /*@Override
-        public void onFailure(@NonNull Exception exception) {
-            Log.d("LocationChangeActivity", exception.getLocalizedMessage());
-            MainActivity activity = activityWeakReference.get();
-            if (activity != null) {
-                Toast.makeText(activity, exception.getLocalizedMessage(),
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-    @Override
-    protected void onStart() {
-        super.onStart();
-        current_map.onStart();
-    }
-    @Override
-    protected void onStop() {
-        super.onStop();
-        current_map.onStop();
-    }
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        current_map.onSaveInstanceState(outState);
-    }
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-// Prevent leaks
-        if (locationEngine != null) {
-            locationEngine.removeLocationUpdates(callback);
-        }
-        current_map.onDestroy();
-    }
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        current_map.onLowMemory();
-    }*/
     public void writeFileOnInternalStorage(String timeStamp){
         try{
             String filename=new String(("TXT_"+timeStamp+".txt"));
@@ -520,9 +293,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
             out.close();
             create_kml KML = new create_kml();
-            String kml_file = KML.kml(current_timestamp,lati,longi);
+            String kml_file = KML.kml(current_timestamp,lati,longi,"VID_"+timeStamp);
             lati.clear();
             longi.clear();
+            current_timestamp.clear();
             String kml_filename = new String("KML_"+timeStamp+".kml");
             File k_file =new File(mediaStorageDir.getPath()+File.separator+kml_filename);
             FileWriter k_filewriter = new FileWriter(k_file);
@@ -556,49 +330,3 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     };
 }
-    /*private class MyLocationListener implements LocationListener {
-        @Override
-        public void onLocationChanged(Location loc) {
-            Toast.makeText(
-                    getBaseContext(),
-                    "Location changed: Lat: " + loc.getLatitude() + " Lng: "
-                            + loc.getLongitude(), Toast.LENGTH_SHORT).show();
-            /*String longitude = "Longitude: " + loc.getLongitude();
-            Log.e("longitude", longitude);
-            String latitude = "Latitude: " + loc.getLatitude();
-            Log.e("latitude", latitude);*/
-            /*double longitude=loc.getLongitude();
-            double latitude=loc.getLatitude();
-            location ob=new location(longitude,latitude);
-            getlocation.add(ob);
-            Log.d("location",getlocation.toString());
-            System.out.println(getlocation.toString());
-            /*------- To get city name from coordinates -------- */
-            /*String cityName = null;
-            Geocoder gcd = new Geocoder(getBaseContext(), Locale.getDefault());
-            List<Address> addresses;
-            try {
-                addresses = gcd.getFromLocation(loc.getLatitude(),
-                        loc.getLongitude(), 1);
-                if (addresses.size() > 0) {
-                    System.out.println(addresses.get(0).getLocality());
-                    cityName = addresses.get(0).getLocality();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            String s = longitude + "\n" + latitude + "\n\nMy Current City is: "
-                    + cityName;
-            editLocation.setText(s);*/
-
-
-        /*@Override
-        public void onProviderDisabled(String provider) {
-        }
-        @Override
-        public void onProviderEnabled(String provider) {
-        }
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-        }
-    }*/

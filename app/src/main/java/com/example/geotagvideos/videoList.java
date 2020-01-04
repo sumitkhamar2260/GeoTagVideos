@@ -11,7 +11,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
 
 import java.io.File;
 import java.text.ParseException;
@@ -56,8 +55,6 @@ public class videoList extends AppCompatActivity {
                     thumbnail_bitmap.add(Bitmap.createScaledBitmap(temporary,100,100,false));
                     video_title.add(files[i].getName());
                     Uri uri = Uri.fromFile(new File(files[i].getPath()));
-                    Log.d("Path",files[i].getPath().toString());
-                    Log.d("URI:",uri.toString());
                     mediaMetadataRetriever.setDataSource(getApplicationContext(), uri);
                     String time = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
                     String date_R = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE);

@@ -1,14 +1,22 @@
 package com.example.geotagvideos;
 
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentActivity;
 
+import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.view.View;
+import android.webkit.MimeTypeMap;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -33,47 +41,110 @@ public class WatchVideo extends FragmentActivity implements OnMapReadyCallback {
     String video_title;
     ArrayList<Double> lat,lon,spd;
     ImageView play;
-    Handler handler;
+    Handler handler,seekBar_Handler;
     Marker marker;
     boolean isMarkerAdded = false;
     TextView speed;
     int i=0;
+    SeekBar seekBar;
+    Button open_earth;
+    File mediaStorageDir;
+    ImageView play_pause;
+    boolean isPaused=true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_watch_video);
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        try {
+            mapFragment.getMapAsync(this);
+        }catch (Exception e){
+            Toast.makeText(getApplicationContext(),"Please Try Again",Toast.LENGTH_LONG).show();
+        }
         video = findViewById(R.id.video);
         play = findViewById(R.id.play_button);
         speed = findViewById(R.id.speed);
+        open_earth = findViewById(R.id.open_earth);
         speed.setVisibility(View.GONE);
         video_title = getIntent().getStringExtra("video_title");
         lat = new ArrayList<Double>();
         lon = new ArrayList<Double>();
         spd = new ArrayList<Double>();
-        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+        seekBar = findViewById(R.id.seekBar);
+        play_pause = findViewById(R.id.play_pause);
+        mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES), "GeoTagged Videos");
         setLatlon_string(mediaStorageDir.getPath());
         video.setVideoPath(mediaStorageDir.getPath()+'/'+video_title);
         handler = new Handler();
+        seekBar_Handler = new Handler();
         play.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 play.setVisibility(View.GONE);
                 video.start();
+                play_pause.setImageDrawable(getResources().getDrawable(R.drawable.pause_video));
                 speed.setVisibility(View.VISIBLE);
                 handler.postDelayed(showMarker,0);
+                handler.postDelayed(showSeekBar,0);
+            }
+        });
+        open_earth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String kml_title = video_title.replace("VID","KML");
+                kml_title = kml_title.replace(".mp4",".kml");
+                String pathToLocalKmlFile = mediaStorageDir.getPath()+'/'+kml_title;
+                openKmlInGoogleEarth(pathToLocalKmlFile);
+
+            }
+        });
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                seekBar_Handler.removeCallbacks(showSeekBar);
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                seekBar_Handler.removeCallbacks(showSeekBar);
+                video.seekTo(seekBar.getProgress());
+                seekBar_Handler.postDelayed(showSeekBar,100);
+                i = video.getCurrentPosition()/1000;
+            }
+        });
+        play_pause.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(isPaused){
+                    play_pause.setImageDrawable(getResources().getDrawable(R.drawable.pause_video));
+                    isPaused = false;
+                    seekBar_Handler.postDelayed(showSeekBar,100);
+                    play.setVisibility(View.GONE);
+                    video.start();
+                    handler.postDelayed(showMarker,1000);
+                }else{
+                    play_pause.setImageDrawable(getResources().getDrawable(R.drawable.playvideo));
+                    isPaused = true;
+                    video.pause();
+                    i=video.getCurrentPosition()/1000;
+                    handler.removeCallbacks(showMarker);
+                }
             }
         });
     }
     public void setLatlon_string(String directory_path) {
         String text_title = video_title.replace("VID","TXT");
         text_title = text_title.replace(".mp4",".txt");
-        BufferedReader bufferedReader = null;
-        String line,location[];
+        BufferedReader bufferedReader;
+        String line;
+        String[] location;
         try {
             bufferedReader = new BufferedReader(new FileReader(directory_path + '/' + text_title));
             if(!bufferedReader.ready()){
@@ -94,23 +165,13 @@ public class WatchVideo extends FragmentActivity implements OnMapReadyCallback {
         }
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         for(int i = 0;i<lat.size()-1;i++){
             mMap.addPolyline(new PolylineOptions().add(new LatLng(lat.get(i),lon.get(i)),new LatLng(lat.get(i+1),lon.get(i+1))).width(15).color(Color.BLUE).geodesic(true));
         }
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(0),lon.get(0)),20));
-        // Add a marker in Sydney and move the camera
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(0),lon.get(0)),19));
     }
     Runnable showMarker = new Runnable() {
         @Override
@@ -122,12 +183,49 @@ public class WatchVideo extends FragmentActivity implements OnMapReadyCallback {
                 if(isMarkerAdded)
                     marker.remove();
                 marker=mMap.addMarker(new MarkerOptions().position(new LatLng(lat.get(i),lon.get(i))).icon(BitmapDescriptorFactory.fromResource(R.drawable.userlocation)).flat(true));
-                //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lat.get(i),lon.get(i)),18));
-                speed.setText(String.valueOf(spd.get(i) + "Km/h"));
+                speed.setText(spd.get(i) + "Km/h");
                 i++;
                 isMarkerAdded = true;
                 WatchVideo.this.handler.postDelayed(WatchVideo.this.showMarker,1000);
             }
         }
     };
+    public void openKmlInGoogleEarth(String pathToFileInExternalStorage) {
+        try {
+            String[] splits = pathToFileInExternalStorage.split("\\.");
+            String ext = "";
+            if(splits.length >= 2) {
+                ext = splits[splits.length-1];
+            }
+            MimeTypeMap mime = MimeTypeMap.getSingleton();
+            String mimeType = mime.getMimeTypeFromExtension(ext);
+            File file = new File(pathToFileInExternalStorage);
+            Uri uri;
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                uri = Uri.fromFile(file);
+            } else {
+                uri = FileProvider.getUriForFile(WatchVideo.this,
+                        BuildConfig.APPLICATION_ID + ".provider",
+                        file);
+            }
+            final String type = "application/vnd.google-earth.kml+xml";
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(uri, mimeType);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+        }
+        catch(IllegalArgumentException e) {
+            Toast.makeText(getApplicationContext(),"In Catch",Toast.LENGTH_LONG).show();
+        }
+    }
+    Runnable showSeekBar = new Runnable() {
+        @Override
+        public void run() {
+            seekBar.setMax(video.getDuration());
+            seekBar.setProgress(video.getCurrentPosition());
+            seekBar_Handler.postDelayed(showSeekBar,100);
+        }
+    };
+
 }
