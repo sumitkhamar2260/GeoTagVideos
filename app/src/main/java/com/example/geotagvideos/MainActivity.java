@@ -14,7 +14,6 @@ import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -25,7 +24,6 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedWriter;
@@ -38,10 +36,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Timer;
-import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
-    static ArrayList<ArrayList<Double>> locations = new ArrayList<ArrayList<Double>>() ;
+    static ArrayList<ArrayList<String>> locations = new ArrayList<ArrayList<String>>() ;
     static File mediaStorageDir;
     static Context ctx;
     static String time;
@@ -288,7 +284,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             File file =new File(mediaStorageDir.getPath()+File.separator+filename);
             FileWriter filewriter = new FileWriter(file);
             BufferedWriter out = new BufferedWriter(filewriter);
-            for(ArrayList<Double> s : locations)
+            for(ArrayList<String> s : locations)
             {
                 out.write(s.toString()+"\n");
             }
@@ -313,20 +309,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public Runnable runlocation=new Runnable() {
         @Override
         public void run() {
+            GPSTracker gpsTracker = new GPSTracker(MainActivity.this);
             Double latitude=0.0;
             Double longitude=0.0;
             if(gpsTracker.canGetLocation()) {
                 latitude = gpsTracker.getLatitude();
                 longitude = gpsTracker.getLongitude();
             }
-            ArrayList<Double> lo=new ArrayList<Double>();
-            lo.add(latitude);
+            ArrayList<String> lo=new ArrayList<String>();
+            lo.add(String.valueOf(latitude));
             lati.add(latitude);
             longi.add(longitude);
-            lo.add(longitude);
-            lo.add(Double.valueOf(df.format(gpsTracker.getSpeed())));
+            lo.add(String.valueOf(longitude));
+            lo.add(String.valueOf(Double.valueOf(df.format(gpsTracker.getSpeed()))));
+            lo.add(new SimpleDateFormat("dd-MM-yyyy'T'HH:mm:sszzzzzz", Locale.US).format(new Date()));
             locations.add(lo);
-            current_timestamp.add(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:sszzzzzz", Locale.US).format(new Date()));
+            current_timestamp.add(new SimpleDateFormat("dd-MM-yyyy'T'HH:mm:sszzzzzz", Locale.US).format(new Date()));
             MainActivity.this.h.postDelayed(MainActivity.this.runlocation,1000);
         }
     };
